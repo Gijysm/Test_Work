@@ -1,8 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "lLIzqnc7VIc=",
+  "dgSpecHash": "r4H2wbdM0IU=",
   "success": true,
   "projectFilePath": "C:\\Users\\popka\\RiderProjects\\ConsoleApp2\\ConsoleApp2\\ConsoleApp2.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\popka\\.nuget\\packages\\xunit.abstractions\\2.0.3\\xunit.abstractions.2.0.3.nupkg.sha512",
+    "C:\\Users\\popka\\.nuget\\packages\\xunit.assert\\2.9.3\\xunit.assert.2.9.3.nupkg.sha512",
+    "C:\\Users\\popka\\.nuget\\packages\\xunit.extensibility.core\\2.9.3\\xunit.extensibility.core.2.9.3.nupkg.sha512"
+  ],
   "logs": []
 }

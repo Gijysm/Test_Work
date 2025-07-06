@@ -1,87 +1,172 @@
 ﻿
 using System.Collections.Frozen;
+using System.Text;
 
 struct Numb
 {
     public byte header;
-    public int meter_id;
-    public byte alert_vdrop;
-    public int principal_consumption;
-    public byte vbatt;
-    public int[] _offsetConsumption;
-    public int padding_bits;
+    public string meter_id;
+    public byte AlertVDrop;
+    public ulong PrincipalConsumption;
+    public byte VBatt;
+    public int[] OffsetConsumption; 
+    public int PaddingBits;
 
     public struct PacketInfo
     {
-        public string IdDataType;
-        public int ConsumptionLpSize;
-        public string ConsumptionSign;
-        public int Other1Status;
-        public int Other2Status;
-
-        public PacketInfo()
-        {
-            IdDataType = null;
-            ConsumptionLpSize = 0;
-            ConsumptionSign = null;
-            Other1Status = 0;
-            Other2Status = 0;
-        }
+        public bool IdDataType; 
+        public int IdAsciiSize; 
+        public bool ConsumptionSign; 
+        public int ConsumptionLpSize; 
+        public byte? Other1Status; 
+        public byte? Other2Status; 
+        public byte? Other3Status; 
     }
-    public PacketInfo packet_info;
-    
+
+    public PacketInfo Packetinfo;
 }
+
 class Numeric
 {
-    
+
     public Numeric(byte[] information)
     {
         Numb numb = new Numb();
-        numb.header = information[0];
-        numb.alert_vdrop  = information[1];
-        numb.vbatt = information[2];
-        byte packetInfoFirst = information[3];
-        byte packetInfoSecond = information[4];
-        string binaryHeader = Convert.ToString(packetInfoFirst, 2).PadLeft(8, '0');
-        string binaryAlert = Convert.ToString(packetInfoSecond, 2).PadLeft(8, '0');
-        int packetInfo = (packetInfoFirst << 8) | packetInfoSecond;
-        int id_ascii_size = (packetInfo >> 10) & 0b1111;
-        int idLength;
-        Console.WriteLine(binaryHeader);
-        Console.WriteLine(binaryAlert);
-        numb.packet_info.IdDataType = binaryHeader.Substring(0, 1) switch
-        {
-            "0" => "numeric",
-            "1" => "ASCII",
-            _ => ""
-        };
-        numb.packet_info.ConsumptionSign = binaryHeader.Substring(1, 1) switch
-        {
-            "0" => "positive",
-            "1" => "negative",
-            _ => ""
-        };
 
-        if (numb.packet_info.IdDataType == "numeric")
+        if (information == null || information.Length < 15)
+            throw new ArgumentException("Масив даних закороткий.");
+
+        int offset = 0;
+
+        numb.header = information[offset++];
+        numb.AlertVDrop = information[offset++];
+        numb.VBatt = information[offset++];
+        ulong packet_info = (ushort)((information[offset++] << 8) | information[offset++]);
+        numb.Packetinfo.IdDataType = (packet_info & 0x8000) != 0;
+        numb.Packetinfo.ConsumptionSign = (packet_info & 0x4000) != 0;
+        numb.Packetinfo.ConsumptionLpSize = (int)(packet_info >> 10) & 0xF;
+        numb.Packetinfo.IdAsciiSize = (int)(packet_info >> 6) & 0xF;
+        numb.Packetinfo.Other1Status = (byte)((packet_info >> 3) & 0x7);
+        numb.Packetinfo.Other2Status = (byte)(packet_info & 0x7);
+        if (numb.Packetinfo.ConsumptionLpSize < 4 || numb.Packetinfo.ConsumptionLpSize > 15)
+            throw new ArgumentException($"Недійсне consumption_lp_size: {numb.Packetinfo.ConsumptionLpSize}");
+        int Length = numb.Packetinfo.IdDataType ? numb.Packetinfo.IdAsciiSize + 1 : 5;
+        if (numb.Packetinfo.IdDataType)
         {
-            idLength = 5;
-            byte[] numericBytes = information.Skip(5).Take(idLength).ToArray();
-            ulong numericId = 0;
-            foreach (var b in numericBytes)
-            {
-                numericId = (numericId << 8) | b;
-            }
-            Console.WriteLine($"Numeric ID: {numericId}");
-            
+            numb.meter_id = Encoding.ASCII.GetString(information, offset, Length);
+            offset += Length;
         }
         else
         {
-            idLength = id_ascii_size + 1;
+            ulong numericId = 0;
+            for (int i = 0; i < 5; i++)
+            {
+                numericId = (numericId << 8) | information[offset++];
 
-            string asciiId = System.Text.Encoding.ASCII.GetString(information, 5, idLength);
-            Console.WriteLine($"ASCII ID: {asciiId}");
+            }
+
+            numb.meter_id = numericId.ToString();
         }
+
+        if (offset + 5 > information.Length)
+        {
+            throw new ArgumentException("Недостатньо даних для principal_consumption.");
+        }
+
+        numb.PrincipalConsumption = 0;
+        for (int i = 0; i < numb.Packetinfo.ConsumptionLpSize; i++)
+        {
+            numb.PrincipalConsumption = (numb.PrincipalConsumption << 8) | information[offset++];
+        }
+
+        byte[] other1 = null, other2 = null, other3 = null;
+        if (numb.Packetinfo.Other1Status is > 0 and < 7)
+        {
+            other1 = new byte[numb.Packetinfo.Other1Status.Value];
+            if (offset + other1.Length <= information.Length)
+            {
+                Array.Copy(information, offset, other1, 0, other1.Length);
+            }
+
+            offset += other1.Length;
+        }        
+        if (numb.Packetinfo.Other2Status is > 0 and < 7)
+        {
+            other2 = new byte[numb.Packetinfo.Other2Status.Value];
+            if (offset + other2.Length <= information.Length)
+            {
+                Array.Copy(information, offset, other2, 0, other2.Length);
+            }
+
+            offset += other2.Length;
+        }
+        if (numb.Packetinfo.Other3Status is > 0 and < 7)
+        {
+            other3 = new byte[numb.Packetinfo.Other3Status.Value];
+            if (offset + other3.Length <= information.Length)
+            {
+                Array.Copy(information, offset, other3, 0, other3.Length);
+            }           
+            
+            offset += other3.Length;
+        }
+
+        numb.OffsetConsumption = new int[11]; 
+        int bitRead = 0;
+        int currentByte = offset < information.Length ? information[offset] : 0;
+        int bitPosition = 7;
+        for (int i = 0; i < 11; i++)
+        {
+            int value = 0;
+            for (int j = 0; j < numb.Packetinfo.ConsumptionLpSize; j++)
+            {
+                if (bitPosition < 0)
+                {
+                    offset++;
+                    bitPosition = 7;
+                    currentByte = offset < information.Length ? information[offset] : 0;
+                }
+                value = (value << 1) | ((currentByte >> bitPosition) & 1);
+                bitPosition--;
+                bitRead++;
+            }
+            numb.OffsetConsumption[i] = numb.Packetinfo.ConsumptionSign ? -value : value;
+        }
+
+        if (bitRead % 8 != 0)
+        {
+            int remainingBits = 8 - (bitRead % 8);
+            int padding = 0;
+            for (int i = 0; i < remainingBits; i++)
+            {
+                if (bitPosition < 0)
+                {
+                    offset++;
+                    bitPosition = 7;
+                    currentByte = offset < information.Length ? information[offset] : 0; 
+                }
+                padding = (padding << 1) | ((currentByte >> bitPosition) & 1);
+                bitPosition--;
+            }
+            numb.PaddingBits = padding;
+        }
+        
+        Console.WriteLine($"Заголовок: 0x{numb.header:X2}");
+        Console.WriteLine($"Alert VDrop: 0x{numb.AlertVDrop:X2}");
+        Console.WriteLine($"VBatt: 0x{numb.VBatt:X2}");
+        Console.WriteLine($"Тип ID: {(numb.Packetinfo.IdDataType ? "ASCII" : "numeric")}");
+        Console.WriteLine($"Знак споживання: {(numb.Packetinfo.ConsumptionSign ? "negative" : "positive")}");
+        Console.WriteLine($"Розмір LP споживання: {numb.Packetinfo.ConsumptionLpSize} бітів");
+        Console.WriteLine($"Розмір ASCII ID: {numb.Packetinfo.IdAsciiSize}");
+        Console.WriteLine($"ID лічильника: {numb.meter_id}");
+        Console.WriteLine($"Основне споживання: {numb.PrincipalConsumption}");
+        Console.WriteLine($"Статус Other1: {numb.Packetinfo.Other1Status ?? 0}");
+        Console.WriteLine($"Статус Other2: {numb.Packetinfo.Other2Status ?? 0}");
+        Console.WriteLine($"Статус Other3: {numb.Packetinfo.Other3Status ?? 0}");
+        Console.WriteLine($"Зміщення: [{string.Join(", ", numb.OffsetConsumption)}]");
+        Console.WriteLine($"Бітові заповнення: {numb.PaddingBits}");
     }
+    
 }
 
 internal class Program

@@ -12,3 +12,9 @@ C:\Users\popka\RiderProjects\ConsoleApp2\ConsoleApp2\obj\Debug\net9.0\refint\Con
 C:\Users\popka\RiderProjects\ConsoleApp2\ConsoleApp2\obj\Debug\net9.0\ConsoleApp2.pdb
 C:\Users\popka\RiderProjects\ConsoleApp2\ConsoleApp2\obj\Debug\net9.0\ConsoleApp2.genruntimeconfig.cache
 C:\Users\popka\RiderProjects\ConsoleApp2\ConsoleApp2\obj\Debug\net9.0\ref\ConsoleApp2.dll
+C:\Users\popka\RiderProjects\ConsoleApp2\ConsoleApp2\obj\Debug\net9.0\ConsoleApp2.sourcelink.json
+C:\Users\popka\RiderProjects\ConsoleApp2\ConsoleApp2\obj\Debug\net9.0\ConsoleApp2.csproj.AssemblyReference.cache
+C:\Users\popka\RiderProjects\ConsoleApp2\ConsoleApp2\bin\Debug\net9.0\xunit.abstractions.dll
+C:\Users\popka\RiderProjects\ConsoleApp2\ConsoleApp2\bin\Debug\net9.0\xunit.assert.dll
+C:\Users\popka\RiderProjects\ConsoleApp2\ConsoleApp2\bin\Debug\net9.0\xunit.core.dll
+C:\Users\popka\RiderProjects\ConsoleApp2\ConsoleApp2\obj\Debug\net9.0\ConsoleA.D5FB4C91.Up2Date
